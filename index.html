@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAKI PRO - EMERGENCY FIX</title>
+    <title>TAKI ONLINE</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         :root { --gold: #ffd700; --red: #ff4d4d; --blue: #4d94ff; --green: #4dff88; --yellow: #ffff4d; }
         * { box-sizing: border-box; user-select: none; font-family: system-ui, sans-serif; }
-        body { margin: 0; background: #0a2b12; color: white; height: 100dvh; overflow: hidden; }
+        body { margin: 0; background: #0a2b12; color: white; height: 100dvh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
 
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 5000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn { padding: 12px 30px; background: var(--gold); border: none; border-radius: 25px; font-weight: bold; cursor: pointer; color: black; font-size: 16px; margin: 5px; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.98); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn { padding: 15px 40px; background: var(--gold); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; color: black; font-size: 18px; margin: 10px; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
         
         #game-board { display: none; width: 100vw; height: 100dvh; position: relative; background: radial-gradient(circle, #1b5e20, #0a2b12); }
         
-        .player-slot { position: absolute; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 12px; text-align: center; min-width: 100px; border: 2px solid transparent; z-index: 5; }
+        .player-slot { position: absolute; background: rgba(0,0,0,0.8); padding: 12px; border-radius: 15px; text-align: center; min-width: 110px; border: 2px solid transparent; z-index: 5; color: white; }
         .active-turn { border-color: var(--gold); box-shadow: 0 0 20px var(--gold); background: rgba(255, 215, 0, 0.2); }
 
         #slot-bottom { bottom: 120px; left: 50%; transform: translateX(-50%); }
@@ -24,7 +25,7 @@
         #slot-left { top: 50%; left: 20px; transform: translateY(-50%); }
         #slot-right { top: 50%; right: 20px; transform: translateY(-50%); }
 
-        .card { width: 52px; height: 80px; background: white; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: black; border: 2px solid white; }
+        .card { width: 55px; height: 85px; background: white; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: black; border: 2px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin: 2px; cursor: pointer; }
         .c-red { background: var(--red); color: white; }
         .c-blue { background: var(--blue); color: white; }
         .c-green { background: var(--green); color: black; }
@@ -34,22 +35,23 @@
         #my-hand { position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: center; gap: 5px; z-index: 100; overflow-x: auto; padding: 10px; }
         #center-area { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 20px; }
 
-        #admin-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 5px; }
-        .ice-cream-alert { color: #ff99cc; font-weight: bold; font-size: 14px; display: block; margin-top: 5px; }
+        #admin-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+        .ice-cream-alert { color: #ff99cc; font-weight: bold; font-size: 14px; display: block; margin-top: 5px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div id="login-screen" class="overlay">
-    <h1 style="color:var(--gold)">TAKI PRO</h1>
-    <input type="text" id="user-input" style="padding:10px; text-align:center; border-radius:5px;" placeholder="שם שחקן">
-    <button class="btn" style="margin-top:10px" onclick="preJoin()">כנס למשחק</button>
+    <h1 style="color:var(--gold); margin-bottom: 20px;">TAKI ONLINE</h1>
+    <input type="text" id="user-input" style="padding:15px; text-align:center; border-radius:10px; border:none; width: 250px; font-size: 16px;" placeholder="הכנס שם שחקן...">
+    <button class="btn" onclick="preJoin()">כניסה למשחק</button>
 </div>
 
 <div id="game-board">
     <div id="admin-panel" style="display:none">
-        <button class="btn" style="font-size:10px; padding:5px;" onclick="dealCards()">חלק קלפים</button>
-        <button class="btn" style="font-size:10px; padding:5px; background:red; color:white;" onclick="resetAll()">איפוס</button>
+        <button class="btn" style="font-size:12px; padding:8px 15px;" onclick="dealCards()">חלק קלפים</button>
+        <button class="btn" style="font-size:12px; padding:8px 15px; background:var(--red); color:white;" onclick="resetAll()">איפוס משחק</button>
     </div>
 
     <div id="slot-top" class="player-slot"></div>
@@ -58,7 +60,7 @@
     <div id="slot-bottom" class="player-slot"></div>
 
     <div id="center-area">
-        <div id="draw-pile" class="card c-special" style="cursor:pointer" onclick="playerDraw()">קופה</div>
+        <div id="draw-pile" class="card c-special" onclick="playerDraw()">קופה</div>
         <div id="last-played"></div>
     </div>
     <div id="my-hand"></div>
@@ -77,51 +79,66 @@
 
     firebase.initializeApp(config);
     const db = firebase.database();
-    let myId, myName, isAdmin = false, gameState = {}, players = [];
+    let myId = sessionStorage.getItem('taki_uid'), myName, isAdmin = false, gameState = {}, players = [];
 
-    function preJoin() {
-        let name = document.getElementById('user-input').value.trim();
-        if(!name || myId) return;
-
-        // הסתרת מסך הכניסה מיידית כדי למנוע לופים
+    // אם השחקן כבר רשום (ריענון דף), ננסה להכניס אותו אוטומטית
+    if(myId) {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('game-board').style.display = 'block';
-
-        if(name === "מנהל") {
-            isAdmin = true;
-            name = "המנהל";
-            document.getElementById('admin-panel').style.display = 'flex';
-        }
-
-        myName = name;
-        const ref = db.ref('players').push();
-        myId = ref.key;
-
-        ref.set({ id: myId, name: myName, cards: 0, ready: false });
-        ref.onDisconnect().remove();
-        
         startSync();
     }
 
+    function preJoin() {
+        let name = document.getElementById('user-input').value.trim();
+        if(!name) return;
+
+        if(name === "מנהל") {
+            isAdmin = true;
+            name = "המנהל 👑";
+            document.getElementById('admin-panel').style.display = 'flex';
+        }
+
+        const ref = db.ref('players').push();
+        myId = ref.key;
+        myName = name;
+        sessionStorage.setItem('taki_uid', myId);
+
+        // קודם כל מעלים נתונים ל-Firebase
+        ref.set({ id: myId, name: myName, cards: 0, ready: false }).then(() => {
+            // רק אחרי שה-Set הצליח, עוברים מסך ומתחילים סנכרון
+            document.getElementById('login-screen').remove(); // מחיקה מוחלטת
+            document.getElementById('game-board').style.display = 'block';
+            ref.onDisconnect().remove();
+            startSync();
+        });
+    }
+
     function startSync() {
+        // האזנה למצב המשחק
         db.ref('state').on('value', s => {
             gameState = s.val() || {};
             updateUI();
         });
 
+        // האזנה לרשימת השחקנים
         db.ref('players').on('value', s => {
             const data = s.val() || {};
             players = Object.keys(data);
             refreshPlayers(data);
         });
 
+        // האזנה לקלפים שלי
         db.ref(`hands/${myId}`).on('value', s => {
             renderHand(s.val() || []);
             db.ref(`players/${myId}/cards`).set((s.val() || []).length);
         });
 
+        // האזנה לאיפוס
         db.ref('reset').on('value', s => { 
-            if(s.val() === true && !isAdmin) location.reload(); 
+            if(s.val() === true && !isAdmin) {
+                sessionStorage.clear();
+                location.reload();
+            }
         });
     }
 
@@ -130,6 +147,8 @@
         slots.forEach(s => document.getElementById(s).style.display = 'none');
         
         const myIdx = players.indexOf(myId);
+        if(myIdx === -1) return; // הגנה אם השחקן עוד לא ברשימה
+
         players.forEach((pid, i) => {
             let rel = (i - myIdx + players.length) % players.length;
             let sid = (rel === 0) ? 'slot-bottom' : (rel === 1) ? (players.length === 2 ? 'slot-top' : 'slot-left') : (rel === 2) ? 'slot-top' : 'slot-right';
@@ -139,15 +158,12 @@
             el.style.display = 'block';
             el.className = `player-slot ${gameState.turn === pid ? 'active-turn' : ''}`;
             
-            let nameTag = (rel === 0) ? "" : `<b>${data[pid].name}</b><br>`;
-            let content = nameTag + `🎴 ${data[pid].cards || 0}`;
+            let nameDisplay = (rel === 0) ? "אני" : data[pid].name;
+            let content = `<b>${nameDisplay}</b><br>🎴 ${data[pid].cards || 0}`;
             
             if(data[pid].name.includes("זוהר")) {
                 content += `<span id="ice-${pid}" class="ice-cream-alert">הפעם לא תקבלי גלידה 🍦🍦</span>`;
-                setTimeout(() => { 
-                    const item = document.getElementById(`ice-${pid}`);
-                    if(item) item.style.display = 'none';
-                }, 2000);
+                setTimeout(() => { if(document.getElementById(`ice-${pid}`)) document.getElementById(`ice-${pid}`).style.visibility = 'hidden'; }, 2000);
             }
             el.innerHTML = content;
         });
