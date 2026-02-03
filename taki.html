@@ -2,137 +2,70 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAKI Master - Online</title>
+    <title>TAKI MASTER - ONLINE</title>
     <style>
-        :root {
-            --gold: #d4af37;
-            --taki-red: #e74c3c;
-            --taki-blue: #3498db;
-            --taki-green: #2ecc71;
-            --taki-yellow: #f1c40f;
-            --panel-bg: rgba(26, 26, 26, 0.95);
+        :root { --gold: #d4af37; --red: #e74c3c; }
+        body { 
+            margin: 0; background: #1a1a1a; color: white; font-family: sans-serif;
+            display: flex; height: 100vh; flex-direction: column;
         }
-
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: radial-gradient(circle, #2c3e50 0%, #000000 100%);
-            color: white;
-            height: 100vh;
-            display: flex;
-            overflow: hidden;
-        }
-
         /* מסך כניסה */
         #login-screen {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+            position: fixed; inset: 0; background: black; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-
-        .premium-input {
-            padding: 12px 20px; border-radius: 25px; border: 2px solid var(--gold);
-            background: transparent; color: white; width: 250px; margin-bottom: 20px; text-align: center;
-        }
-
-        .btn-play {
-            padding: 12px 40px; border-radius: 25px; border: none;
-            background: var(--gold); color: black; font-weight: bold; cursor: pointer;
-            box-shadow: 0 0 15px var(--gold); transition: 0.3s;
-        }
-
-        /* מבנה המשחק */
-        #game-container { display: none; width: 100%; height: 100%; flex-direction: row; }
-
-        #sidebar {
-            width: 300px; background: var(--panel-bg); border-left: 2px solid var(--gold);
-            display: flex; flex-direction: column;
-        }
-
-        #main-board { flex: 1; display: flex; flex-direction: column; position: relative; }
-
-        /* אזור הצ'אט */
-        .chat-section { flex: 1; display: flex; flex-direction: column; padding: 10px; overflow: hidden; }
-        #chat-msgs { flex: 1; overflow-y: auto; border-bottom: 1px solid #444; margin-bottom: 10px; font-size: 14px; }
-        .msg { margin-bottom: 5px; padding: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); }
-        .msg.private { border: 1px dashed var(--gold); background: rgba(212, 175, 55, 0.1); }
-
-        /* לוח קלפים */
-        #center-pile {
-            flex: 1; display: flex; align-items: center; justify-content: center; gap: 40px;
-        }
-
-        .card {
-            width: 90px; height: 135px; border-radius: 12px; border: 4px solid white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s;
-            user-select: none; position: relative;
-        }
-        .card:hover { transform: translateY(-20px) rotate(5deg); z-index: 10; }
+        /* מבנה ראשי */
+        #game-container { display: none; flex: 1; display: flex; }
+        #sidebar { width: 250px; background: #222; border-left: 2px solid var(--gold); display: flex; flex-direction: column; }
+        #main-board { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
-        .card.red { background: var(--taki-red); }
-        .card.blue { background: var(--taki-blue); }
-        .card.green { background: var(--taki-green); }
-        .card.yellow { background: var(--taki-yellow); }
-        .card.special { background: #222; color: var(--gold); }
+        /* צ'אט */
+        #chat-box { flex: 1; overflow-y: auto; padding: 10px; font-size: 14px; }
+        .msg { margin-bottom: 8px; padding: 5px; border-radius: 5px; background: #333; }
+        .msg.private { border: 1px solid var(--gold); color: var(--gold); }
+        
+        /* שחקנים */
+        .player-item { padding: 10px; border-bottom: 1px solid #444; cursor: pointer; }
+        .player-item:hover { background: #333; }
+        .hp-bar { color: #ff4d4d; font-weight: bold; font-size: 12px; }
 
-        #my-hand {
-            height: 180px; display: flex; justify-content: center; align-items: center;
-            padding: 20px; gap: -30px; background: rgba(0,0,0,0.3);
-        }
-
-        .player-tag {
-            padding: 5px 15px; border-radius: 15px; background: #333; margin: 5px;
-            cursor: pointer; transition: 0.2s; border: 1px solid transparent;
-        }
-        .player-tag:hover { border-color: var(--gold); }
-        .player-tag.active { box-shadow: 0 0 10px var(--gold); border-color: var(--gold); }
-
+        input, button { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
+        .btn-gold { background: var(--gold); color: black; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="login-screen">
-    <h1 style="color: var(--gold); font-size: 50px; margin-bottom: 10px;">TAKI MASTER</h1>
-    <p style="margin-bottom: 30px; opacity: 0.8;">המשחק המקורי של חיים שפיר - גרסת האונליין</p>
-    <input type="text" id="username" class="premium-input" placeholder="איך קוראים לך?">
-    <button class="btn-play" onclick="joinGame()">התחבר למשחק</button>
+    <h1 style="color: var(--gold);">TAKI MASTER</h1>
+    <input type="text" id="username" placeholder="הכנס שם שחקן...">
+    <button class="btn-gold" onclick="joinGame()">התחל לשחק</button>
 </div>
 
-<div id="game-container">
+<div id="game-container" style="display: none;">
     <div id="sidebar">
-        <div style="padding: 15px;">
-            <h3 style="color: var(--gold);">שחקנים (לחץ לצאט פרטי)</h3>
-            <div id="player-list"></div>
-        </div>
-        <div class="chat-section">
-            <div id="chat-msgs"></div>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="chat-input" placeholder="הודעה..." style="flex:1; padding:8px; border-radius:5px; border:none;">
-                <button onclick="sendMsg()" style="background:var(--gold); border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">שלח</button>
-            </div>
+        <div style="padding: 10px; background: #333;"><b>שחקנים (לחץ ללחישה)</b></div>
+        <div id="player-list"></div>
+        <div id="chat-box"></div>
+        <div style="display: flex; padding: 5px;">
+            <input type="text" id="chat-input" placeholder="הודעה..." style="flex: 1;">
+            <button class="btn-gold" onclick="sendMsg()">שלח</button>
         </div>
     </div>
-
+    
     <div id="main-board">
-        <div id="status-bar" style="padding: 20px; text-align: center; font-size: 20px; color: var(--gold);">
-            מחכה לשחקנים נוספים...
+        <div id="turn-indicator" style="font-size: 24px; color: var(--gold); margin-bottom: 20px;">מחכה לשחקנים...</div>
+        <div style="display: flex; gap: 20px;">
+            <div id="deck" style="width: 100px; height: 150px; background: #444; border: 3px solid white; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;">קופה</div>
+            <div id="pile" style="width: 100px; height: 150px; background: white; border: 3px solid #e74c3c; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: black; font-weight: bold; font-size: 30px;">8</div>
         </div>
-
-        <div id="center-pile">
-            <div id="deck" class="card special" onclick="drawCard()">קופה</div>
-            <div id="discard-pile">
-                </div>
-        </div>
-
-        <div id="my-hand"></div>
+        <div id="my-hand" style="margin-top: 50px; display: flex; gap: 10px;">
+            </div>
     </div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getDatabase, ref, set, onValue, push, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, set, onValue, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyDTcYiOhazu3kfn5YhjAnjDBCJMyGaqvA4",
@@ -147,54 +80,53 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    let myId, myName, currentTargetId = null;
+    let myId, myName, privateTargetId = null;
 
     window.joinGame = () => {
         myName = document.getElementById('username').value;
-        if(!myName) return alert("שם בבקשה!");
-        
+        if(!myName) return alert("הכנס שם!");
+
         const pRef = push(ref(db, 'players'));
         myId = pRef.key;
-        
         onDisconnect(pRef).remove();
-        
-        set(pRef, { id: myId, name: myName, online: true });
-        
+
+        set(pRef, { id: myId, name: myName, hp: 100 });
+
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('game-container').style.display = 'flex';
-        
-        initSync();
+        startSync();
     };
 
-    function initSync() {
-        // סנכרון שחקנים וצאט
+    function startSync() {
+        // סנכרון שחקנים ודם
         onValue(ref(db, 'players'), (snap) => {
             const players = snap.val();
             const list = document.getElementById('player-list');
             list.innerHTML = '';
             for(let id in players) {
                 const p = players[id];
-                const div = document.createElement('div');
-                div.className = 'player-tag';
-                div.innerText = p.name + (id === myId ? " (אתה)" : "");
-                div.onclick = () => {
-                    currentTargetId = id;
-                    alert("עכשיו שולח הודעה פרטית ל-" + p.name);
+                const item = document.createElement('div');
+                item.className = 'player-item';
+                item.innerHTML = `<div>${p.name}</div><div class="hp-bar">❤️ ${p.hp} HP</div>`;
+                item.onclick = () => {
+                    privateTargetId = id;
+                    alert("לוחש ל: " + p.name);
                 };
-                list.appendChild(div);
+                list.appendChild(item);
             }
         });
 
+        // סנכרון צ'אט
         onValue(ref(db, 'chat'), (snap) => {
             const msgs = snap.val();
-            const box = document.getElementById('chat-msgs');
+            const box = document.getElementById('chat-box');
             box.innerHTML = '';
             for(let id in msgs) {
                 const m = msgs[id];
                 if(!m.target || m.target === myId || m.senderId === myId) {
                     const div = document.createElement('div');
                     div.className = 'msg' + (m.target ? ' private' : '');
-                    div.innerHTML = `<b>${m.sender}:</b> ${m.text}`;
+                    div.innerHTML = `<b>${m.target ? '🔒 ' : ''}${m.sender}:</b> ${m.text}`;
                     box.appendChild(div);
                 }
             }
@@ -209,14 +141,11 @@
             sender: myName,
             senderId: myId,
             text: input.value,
-            target: currentTargetId,
-            time: Date.now()
+            target: privateTargetId
         });
         input.value = '';
-        currentTargetId = null; // איפוס לצאט כללי
+        privateTargetId = null;
     };
-
-    // פונקציות משחק נוספות יתווספו כאן בסנכרון הבא
 </script>
 </body>
 </html>
