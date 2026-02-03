@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAKI MOBILE PRO</title>
+    <title>TAKI ONLINE</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     
     <style>
-        /* איפוס והגדרות בסיס */
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', sans-serif; }
-        body { margin: 0; background: #111; overflow: hidden; height: 100vh; width: 100vw; color: white; }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; font-family: sans-serif; }
+        body { margin: 0; background: #1a1a1a; overflow: hidden; height: 100dvh; width: 100vw; color: white; }
 
-        /* מסך "נא לסובב מכשיר" */
+        /* מסך סיבוב - חובה למשחק תקין */
         #rotate-msg {
-            display: none; position: fixed; inset: 0; background: #000; z-index: 9999;
+            display: none; position: fixed; inset: 0; background: black; z-index: 9999;
             flex-direction: column; align-items: center; justify-content: center; text-align: center;
         }
         @media (orientation: portrait) { #rotate-msg { display: flex; } }
@@ -24,135 +23,107 @@
             position: fixed; inset: 0; background: radial-gradient(circle, #333, #000); z-index: 5000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .input-box { font-size: 20px; padding: 10px; border-radius: 10px; text-align: center; width: 60%; margin: 10px; }
-        .btn-main { font-size: 20px; padding: 10px 40px; background: gold; border: none; border-radius: 30px; font-weight: bold; box-shadow: 0 0 15px gold; }
+        .btn-gold { background: gold; border: none; padding: 10px 30px; font-size: 20px; border-radius: 30px; font-weight: bold; cursor: pointer; }
 
-        /* לוח המשחק */
-        #game-ui { display: none; width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #2e7d32 0%, #0d2b11 100%); }
+        /* אזור המשחק */
+        #game-ui { display: none; width: 100%; height: 100%; position: relative; background: radial-gradient(circle, #2e7d32, #0d2b11); }
 
-        /* קלפים - עיצוב דמוי מקור */
+        /* צ'אט תמיד גלוי */
+        #chat-container {
+            position: absolute; top: 10px; right: 10px; width: 200px; height: 120px;
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 10px; display: flex; flex-direction: column; pointer-events: none; z-index: 50;
+        }
+        #chat-box { flex: 1; overflow-y: auto; font-size: 12px; padding: 5px; text-shadow: 1px 1px 1px black; }
+        #chat-input { pointer-events: auto; background: rgba(0,0,0,0.5); border: none; color: white; padding: 5px; font-size: 12px; }
+
+        /* כפתורי מנהל */
+        #admin-btns { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; z-index: 100; }
+        .btn-small { background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; font-size: 10px; cursor: pointer; }
+
+        /* קלפים */
         .card {
-            width: 12vh; height: 18vh; border-radius: 1vh; background: white; 
-            position: relative; display: flex; align-items: center; justify-content: center;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.5); border: 0.3vh solid white; transition: 0.2s;
+            width: 50px; height: 75px; background: white; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 20px; border: 2px solid white;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5); position: relative;
         }
-        .card-inner { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 8vh; border-radius: 0.5vh; }
-        
-        /* צבעים */
-        .c-red { background: #e63946; color: white; }
-        .c-green { background: #2a9d8f; color: white; }
-        .c-blue { background: #0077b6; color: white; }
-        .c-yellow { background: #ffb703; color: black; }
-        .c-special { background: linear-gradient(135deg, #222, #444); color: gold; border: 2px solid gold; }
+        /* צבעים ברורים */
+        .bg-red { background: #ff4444; color: white; }
+        .bg-green { background: #4caf50; color: white; }
+        .bg-blue { background: #2196f3; color: white; }
+        .bg-yellow { background: #ffeb3b; color: black; }
+        .bg-special { background: #333; color: gold; border: 2px solid gold; }
 
-        /* סמלים מיוחדים */
-        .symbol-stop::after { content: "✋"; font-size: 6vh; }
-        .symbol-plus2::after { content: "+2"; }
-        .symbol-change::after { content: "⇄"; font-size: 8vh; }
-        .symbol-taki { font-size: 4vh; transform: rotate(-10deg); text-shadow: 2px 2px 0 #000; }
-        .symbol-color { font-size: 6vh; background: conic-gradient(red, yellow, green, blue); -webkit-background-clip: text; color: transparent; }
-
-        /* מיקומי שחקנים - מותאם לאחוזים */
-        .player-spot { 
-            position: absolute; padding: 5px; background: rgba(0,0,0,0.6); border-radius: 10px; 
-            display: flex; flex-direction: column; align-items: center; min-width: 15vw;
+        /* אזור הקלפים שלי - תמיד גלוי למעלה */
+        #my-hand {
+            position: absolute; bottom: 10px; left: 0; width: 100%; height: 90px;
+            display: flex; align-items: center; justify-content: center; gap: 5px;
+            z-index: 2000; /* הכי גבוה שאפשר */
+            padding: 0 10px;
         }
-        .p-name { font-size: 2.5vh; font-weight: bold; color: white; }
-        .p-cards { font-size: 2vh; color: gold; }
-        
-        /* מיקומים יחסיים */
-        #spot-top { top: 2%; left: 50%; transform: translateX(-50%); }
-        #spot-left { top: 40%; left: 2%; transform: translateY(-50%); }
-        #spot-right { top: 40%; right: 2%; transform: translateY(-50%); }
-        
-        /* אזור שלי למטה */
-        #my-area {
-            position: absolute; bottom: 0; width: 100%; height: 22vh; 
-            display: flex; align-items: flex-end; justify-content: center; padding-bottom: 2vh;
-            gap: -2vw; /* קלפים חופפים */
-        }
-        .my-card { margin-left: -2vh; transform: translateY(0); transition: 0.2s; cursor: pointer; }
-        .my-card:hover { transform: translateY(-3vh); z-index: 10; }
+        .my-card-wrapper { transition: transform 0.2s; cursor: pointer; }
+        .my-card-wrapper:hover { transform: translateY(-15px); }
 
         /* שולחן מרכזי */
         #center-table {
             position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%);
-            display: flex; gap: 4vw; align-items: center;
+            display: flex; gap: 20px; align-items: center;
         }
-        #deck { background: #333; color: #fff; cursor: pointer; border: 2px solid gold; }
         
-        /* חיווי תור */
-        .active-turn { border: 3px solid gold; box-shadow: 0 0 20px gold; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.8; } }
+        /* שחקנים אחרים */
+        .opponent { position: absolute; background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 10px; text-align: center; font-size: 12px; min-width: 80px; }
+        .active-player { border: 2px solid gold; box-shadow: 0 0 10px gold; }
+        
+        #p-top { top: 10px; left: 50%; transform: translateX(-50%); }
+        #p-left { top: 40%; left: 10px; transform: translateY(-50%); }
+        #p-right { top: 40%; right: 10px; transform: translateY(-50%); }
 
-        /* תפריט מנהל וצ'אט */
-        #menu-btn { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px; border-radius: 5px; z-index: 100; font-size: 12px; }
-        #admin-panel { display: none; position: absolute; top: 40px; left: 10px; background: rgba(0,0,0,0.9); padding: 10px; border: 1px solid gold; z-index: 101; }
-        
-        /* בורר צבע */
-        #color-picker { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 6000; align-items: center; justify-content: center; gap: 20px; }
-        .cp-btn { width: 80px; height: 80px; border-radius: 50%; border: 3px solid white; }
-
-        /* כפתור סגירת טאקי */
-        #close-taki { display: none; position: absolute; bottom: 25vh; left: 50%; transform: translateX(-50%); background: red; color: white; padding: 10px 30px; border-radius: 20px; font-weight: bold; box-shadow: 0 0 10px red; z-index: 200; }
-        
-        /* הודעות */
-        #toast { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px 20px; border-radius: 20px; font-size: 20px; opacity: 0; pointer-events: none; transition: 0.3s; color: gold; border: 1px solid gold; z-index: 500; text-align: center; }
+        /* בוחר צבע */
+        #color-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; gap: 15px; }
+        .c-btn { width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; cursor: pointer; }
 
     </style>
 </head>
 <body>
 
-    <div id="rotate-msg">
-        <h1 style="color:gold; font-size: 50px;">↻</h1>
-        <h2>נא לסובב את הטלפון</h2>
-        <p>המשחק עובד רק לרוחב</p>
-    </div>
+    <div id="rotate-msg"><h1 style="color:gold">↻</h1><p>סובב לרוחב</p></div>
 
     <div id="login-screen">
-        <h1 style="color: gold; font-size: 40px; margin-bottom: 0;">TAKI PRO</h1>
-        <p style="color:#aaa;">גרסה מותאמת לנייד</p>
-        <input type="text" id="username" class="input-box" placeholder="הכנס שם...">
-        <button class="btn-main" onclick="joinGame()">שחק!</button>
+        <h1 style="color:gold">TAKI APP</h1>
+        <input type="text" id="username" placeholder="שם..." style="font-size:20px; padding:5px; text-align:center; margin-bottom:10px;">
+        <button class="btn-gold" onclick="join()">כנס</button>
     </div>
 
     <div id="game-ui">
-        <div id="toast"></div>
-
-        <button id="menu-btn" onclick="toggleMenu()">☰ תפריט</button>
-        <div id="admin-panel">
-            <button onclick="startGame()" style="background:gold; width:100%; margin-bottom:5px;">חלק קלפים</button>
-            <button onclick="resetGame()" style="background:red; color:white; width:100%;">איפוס משחק</button>
-            <div id="chat-box" style="height:100px; overflow-y:auto; color:white; font-size:10px; margin-top:5px; border-top:1px solid #555;"></div>
+        
+        <div id="admin-btns" style="display:none">
+            <button class="btn-small" onclick="deal()">חלק קלפים</button>
+            <button class="btn-small" style="background:red" onclick="reset()">איפוס</button>
         </div>
 
-        <div id="spot-top" class="player-spot" style="display:none">
-            <div class="p-name"></div><div class="p-cards"></div>
+        <div id="chat-container">
+            <div id="chat-box"></div>
+            <input type="text" id="chat-input" placeholder="כתוב כאן...">
         </div>
-        <div id="spot-left" class="player-spot" style="display:none">
-            <div class="p-name"></div><div class="p-cards"></div>
-        </div>
-        <div id="spot-right" class="player-spot" style="display:none">
-            <div class="p-name"></div><div class="p-cards"></div>
-        </div>
+
+        <div id="p-top" class="opponent" style="display:none"></div>
+        <div id="p-left" class="opponent" style="display:none"></div>
+        <div id="p-right" class="opponent" style="display:none"></div>
 
         <div id="center-table">
-            <div id="deck" class="card" onclick="drawCard()">
-                <div class="card-inner" style="background:#222; color:gold; font-size:3vh;">TAKI</div>
-            </div>
+            <div id="deck" class="card bg-special" onclick="draw()">קופה</div>
             <div id="pile"></div>
         </div>
 
-        <div id="close-taki" onclick="closeTaki()">סגור טאקי</div>
-
-        <div id="my-area"></div>
+        <div id="my-hand"></div>
     </div>
 
-    <div id="color-picker">
-        <div class="cp-btn" style="background:#e63946" onclick="selectColor('red')"></div>
-        <div class="cp-btn" style="background:#2a9d8f" onclick="selectColor('green')"></div>
-        <div class="cp-btn" style="background:#0077b6" onclick="selectColor('blue')"></div>
-        <div class="cp-btn" style="background:#ffb703" onclick="selectColor('yellow')"></div>
+    <div id="color-overlay">
+        <div class="c-btn" style="background:#ff4444" onclick="setColor('red')"></div>
+        <div class="c-btn" style="background:#4caf50" onclick="setColor('green')"></div>
+        <div class="c-btn" style="background:#2196f3" onclick="setColor('blue')"></div>
+        <div class="c-btn" style="background:#ffeb3b" onclick="setColor('yellow')"></div>
     </div>
 
 <script>
@@ -168,282 +139,207 @@
 
     firebase.initializeApp(config);
     const db = firebase.database();
+    let myId, myName, isAdmin=false;
+    let gameState = {}, players = [];
 
-    let myId, myName, isAdmin = false;
-    let gameState = { turn: null, pile: null, inTaki: false };
-    let myHand = [];
-    let playersList = []; // רשימת ID של שחקנים לחישוב מיקום
-
-    function joinGame() {
-        const nameInput = document.getElementById('username').value.trim();
-        if (!nameInput) return alert("חייב שם!");
-
-        if (nameInput === "מנהל") {
+    function join() {
+        const val = document.getElementById('username').value;
+        if(!val) return;
+        
+        if(val === "מנהל") {
             isAdmin = true;
-            myName = prompt("שם המנהל:") || "מנהל";
-            document.getElementById('admin-panel').style.display = 'block';
+            myName = "מנהל";
+            document.getElementById('admin-btns').style.display = 'flex';
         } else {
-            myName = nameInput;
+            myName = val;
         }
 
         const ref = db.ref('players').push();
         myId = ref.key;
-        ref.set({ id: myId, name: myName, cardCount: 0 });
+        ref.set({ name: myName, cards: 0 });
         ref.onDisconnect().remove();
 
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
-
-        initGame();
-    }
-
-    function initGame() {
-        // האזנה למצב משחק
-        db.ref('gameState').on('value', snap => {
-            gameState = snap.val() || {};
-            updatePile();
-            checkTurn();
-        });
-
-        // האזנה לשחקנים (לצורך חישוב מיקומים)
-        db.ref('players').on('value', snap => {
-            const data = snap.val() || {};
-            playersList = Object.keys(data);
-            updatePlayersUI(data);
-        });
-
-        // האזנה ליד שלי
-        db.ref(`hands/${myId}`).on('value', snap => {
-            myHand = snap.val() || [];
-            renderHand();
-            db.ref(`players/${myId}/cardCount`).set(myHand.length);
-        });
         
+        listen();
+    }
+
+    function listen() {
+        // מצב משחק
+        db.ref('state').on('value', s => {
+            gameState = s.val() || {};
+            renderTable();
+        });
+
+        // שחקנים
+        db.ref('players').on('value', s => {
+            const data = s.val() || {};
+            players = Object.keys(data);
+            renderOpponents(data);
+        });
+
+        // היד שלי
+        db.ref(`hands/${myId}`).on('value', s => {
+            const hand = s.val() || [];
+            renderHand(hand);
+            db.ref(`players/${myId}/cards`).set(hand.length);
+        });
+
         // צ'אט
-        db.ref('chat').on('child_added', snap => {
-            const m = snap.val();
+        db.ref('chat').on('child_added', s => {
+            const m = s.val();
             const box = document.getElementById('chat-box');
-            box.innerHTML += `<div>${m.text}</div>`;
+            box.innerHTML += `<div><b>${m.u}:</b> ${m.t}</div>`;
+            box.scrollTop = box.scrollHeight;
         });
     }
 
-    // --- ממשק ---
-    
-    function updatePile() {
+    // --- רינדור ---
+    function renderTable() {
         if(!gameState.pile) return;
         const p = document.getElementById('pile');
-        p.className = `card c-${gameState.pile.color}`;
-        p.innerHTML = renderCardContent(gameState.pile);
-    }
-
-    function renderCardContent(card) {
-        let cls = '';
-        if(card.value === 'stop') cls = 'symbol-stop';
-        else if(card.value === '+2') cls = 'symbol-plus2';
-        else if(card.value === 'change_dir') cls = 'symbol-change';
-        else if(card.value === 'taki') { cls = 'symbol-taki'; return `<div class="card-inner ${cls}">TAKI</div>`; }
-        else if(card.value === 'change_color') { cls = 'symbol-color'; return `<div class="card-inner ${cls}">🎨</div>`; }
-        else return `<div class="card-inner" style="font-size:8vh">${card.value}</div>`;
+        p.className = `card bg-${gameState.pile.c}`;
+        if(gameState.pile.c === 'special') p.className += ' bg-special';
+        p.innerText = gameState.pile.v === 'change_color' ? '🎨' : gameState.pile.v;
         
-        return `<div class="card-inner ${cls}"></div>`;
+        // סימון תור
+        const deck = document.getElementById('deck');
+        if(gameState.turn === myId) deck.style.boxShadow = "0 0 20px gold";
+        else deck.style.boxShadow = "none";
     }
 
-    function renderHand() {
-        const area = document.getElementById('my-area');
-        area.innerHTML = '';
-        myHand.forEach((c, i) => {
+    function renderHand(hand) {
+        const div = document.getElementById('my-hand');
+        div.innerHTML = '';
+        hand.forEach((c, i) => {
             const el = document.createElement('div');
-            el.className = `card my-card c-${c.color}`;
-            if(c.color === 'special') el.classList.add('c-special');
-            el.innerHTML = renderCardContent(c);
-            el.onclick = () => playCard(i, c);
-            area.appendChild(el);
+            el.className = 'my-card-wrapper';
+            el.innerHTML = `<div class="card bg-${c.c}">${c.v === 'change_color' ? '🎨' : c.v}</div>`;
+            el.onclick = () => play(i, c);
+            div.appendChild(el);
         });
     }
 
-    function updatePlayersUI(playersData) {
-        // איפוס
-        ['spot-left', 'spot-top', 'spot-right'].forEach(id => document.getElementById(id).style.display = 'none');
-        document.querySelectorAll('.player-spot').forEach(e => e.classList.remove('active-turn'));
+    function renderOpponents(data) {
+        // ניקוי
+        ['p-top', 'p-left', 'p-right'].forEach(id => document.getElementById(id).style.display='none');
+        
+        const myIdx = players.indexOf(myId);
+        if(myIdx === -1) return;
 
-        const myIndex = playersList.indexOf(myId);
-        if(myIndex === -1) return;
-
-        // חישוב מיקומים יחסיים (מעגל)
-        const spots = [
-            { offset: 1, el: 'spot-left' }, // השחקן הבא משמאל
-            { offset: 2, el: 'spot-top' },  // מולי
-            { offset: 3, el: 'spot-right' } // מימין
+        const posMap = [
+            { idx: (myIdx+1)%players.length, el: 'p-left' },
+            { idx: (myIdx+2)%players.length, el: 'p-top' },
+            { idx: (myIdx+3)%players.length, el: 'p-right' }
         ];
 
-        spots.forEach(spot => {
-            if(playersList.length > spot.offset) {
-                // לוגיקה מעגלית למציאת האינדקס הנכון
-                const targetIdx = (myIndex + spot.offset) % playersList.length;
-                // אם הגענו לעצמנו (במשחק של 2 שחקנים למשל), מדלגים
-                if(targetIdx === myIndex) return;
-                
-                const targetId = playersList[targetIdx];
-                const p = playersData[targetId];
-                
+        posMap.forEach(pos => {
+            if(players.length > 2 && pos.idx !== myIdx) {
+                const pid = players[pos.idx];
+                const p = data[pid];
                 if(p) {
-                    const el = document.getElementById(spot.el);
-                    el.style.display = 'flex';
-                    el.querySelector('.p-name').innerText = p.name;
-                    el.querySelector('.p-cards').innerText = `🎴 ${p.cardCount}`;
-                    if(gameState.turn === targetId) el.classList.add('active-turn');
+                    const el = document.getElementById(pos.el);
+                    el.style.display = 'block';
+                    el.innerText = `${p.name}\n🎴 ${p.cards}`;
+                    el.className = `opponent ${gameState.turn === pid ? 'active-player' : ''}`;
                 }
             }
         });
+    }
 
-        // סימון תור שלי
-        if(gameState.turn === myId) showToast("תורך!");
+    // --- לוגיקה ---
+    function play(i, c) {
+        if(gameState.turn !== myId) return;
         
-        // כפתור סגירת טאקי
-        document.getElementById('close-taki').style.display = (gameState.turn === myId && gameState.inTaki) ? 'block' : 'none';
-    }
-
-    function checkTurn() {
-        const deck = document.getElementById('deck');
-        if(gameState.turn === myId) {
-            deck.style.borderColor = 'gold';
-            deck.style.boxShadow = '0 0 15px gold';
-        } else {
-            deck.style.borderColor = 'white';
-            deck.style.boxShadow = 'none';
-        }
-    }
-
-    // --- לוגיקת משחק ---
-
-    function playCard(index, card) {
-        if (gameState.turn !== myId) return showToast("לא תורך!");
-
         const top = gameState.pile;
         let valid = false;
+        if(c.c === 'special') valid = true;
+        else if(c.c === top.c || c.v === top.v) valid = true;
 
-        // חוקים
-        if (gameState.inTaki) {
-            if (card.color === top.color) valid = true;
-        } else {
-            if (card.color === top.color || card.value === top.value || card.color === 'special') valid = true;
+        if(!valid) return alert("לא חוקי");
+
+        if(c.v === 'change_color') {
+            document.getElementById('color-overlay').style.display = 'flex';
+            // שמירת האינדקס למחיקה אח"כ
+            window.tempIdx = i;
+            return;
         }
 
-        if (!valid) return showToast("מהלך לא חוקי");
-
-        // בחירת צבע
-        if (card.value === 'change_color') {
-            document.getElementById('color-picker').style.display = 'flex';
-            // מסירים זמנית מהיד כדי שלא ישחקו שוב, אבל לא שולחים לשרת עד הבחירה
-            return; 
-        }
-
-        // ביצוע
-        const newHand = [...myHand];
-        newHand.splice(index, 1);
-        db.ref(`hands/${myId}`).set(newHand);
-        db.ref('gameState/pile').set(card);
-
-        if(card.value === 'taki' && !gameState.inTaki) {
-            db.ref('gameState/inTaki').set(true);
-            showToast("טאקי פתוח!");
-        } else if (card.value === 'stop') {
-             nextTurn(2); // דילוג
-        } else if (gameState.inTaki) {
-             if(newHand.length === 0) closeTaki();
-        } else {
-             nextTurn(1);
-        }
+        executeMove(i, c);
     }
 
-    function drawCard() {
-        if (gameState.turn !== myId) return;
-        if (gameState.inTaki) { closeTaki(); return; }
+    function executeMove(i, c) {
+        db.ref(`hands/${myId}`).once('value', s => {
+            let h = s.val();
+            h.splice(i, 1);
+            db.ref(`hands/${myId}`).set(h);
+            db.ref('state/pile').set(c);
+            nextTurn();
+        });
+    }
 
-        const colors = ['red', 'green', 'blue', 'yellow'];
-        const values = ['1','3','4','5','6','7','8','9','stop','+2','taki','change_dir'];
-        
+    function setColor(color) {
+        document.getElementById('color-overlay').style.display = 'none';
+        executeMove(window.tempIdx, { c: color, v: 'change_color' });
+    }
+
+    function draw() {
+        if(gameState.turn !== myId) return;
+        const colors = ['red','green','blue','yellow'];
+        const vals = ['1','3','4','5','6','7','8','9','stop','+2','taki'];
         let c = colors[Math.floor(Math.random()*4)];
-        let v = values[Math.floor(Math.random()*values.length)];
-        if(Math.random() < 0.05) { c='special'; v='change_color'; }
+        let v = vals[Math.floor(Math.random()*vals.length)];
+        if(Math.random() < 0.1) { c='special'; v='change_color'; }
 
-        const newHand = [...myHand, {color:c, value:v}];
-        db.ref(`hands/${myId}`).set(newHand);
-        nextTurn(1);
+        db.ref(`hands/${myId}`).once('value', s => {
+            let h = s.val() || [];
+            h.push({c,v});
+            db.ref(`hands/${myId}`).set(h);
+            nextTurn();
+        });
     }
 
-    function selectColor(color) {
-        document.getElementById('color-picker').style.display = 'none';
-        // מחיקת הקלף "שנה צבע" מהיד (מניחים שהוא היה האחרון שנבחר או מוצאים אותו)
-        const idx = myHand.findIndex(c => c.value === 'change_color');
-        if(idx > -1) {
-            const newHand = [...myHand];
-            newHand.splice(idx, 1);
-            db.ref(`hands/${myId}`).set(newHand);
-        }
-        
-        db.ref('gameState/pile').set({color: color, value: 'change_color'});
-        nextTurn(1);
-    }
-
-    function closeTaki() {
-        db.ref('gameState/inTaki').set(false);
-        nextTurn(1);
-    }
-
-    function nextTurn(skip) {
-        // מציאת השחקן הבא
-        const currentIdx = playersList.indexOf(myId);
-        const nextIdx = (currentIdx + skip) % playersList.length;
-        db.ref('gameState/turn').set(playersList[nextIdx]);
+    function nextTurn() {
+        const curr = players.indexOf(myId);
+        const next = players[(curr+1)%players.length];
+        db.ref('state/turn').set(next);
     }
 
     // --- ניהול ---
-    function startGame() {
-        if(playersList.length < 2) return alert("צריך לפחות 2 שחקנים");
+    function deal() {
+        const colors = ['red','green','blue','yellow'];
+        const vals = ['1','3','4','5','6','7','8','9','stop','+2','taki'];
         
-        // חלוקת קלפים
-        const colors = ['red', 'green', 'blue', 'yellow'];
-        const values = ['1','3','4','5','6','7','8','9','stop','+2','taki'];
-        
-        playersList.forEach(pid => {
+        players.forEach(pid => {
             let h = [];
-            for(let i=0; i<8; i++) {
+            for(let k=0; k<8; k++) {
                 h.push({
-                    color: colors[Math.floor(Math.random()*4)], 
-                    value: values[Math.floor(Math.random()*values.length)]
+                    c: colors[Math.floor(Math.random()*4)],
+                    v: vals[Math.floor(Math.random()*vals.length)]
                 });
             }
             db.ref(`hands/${pid}`).set(h);
         });
-
-        db.ref('gameState').set({
-            turn: playersList[0],
-            pile: { color: 'red', value: '1' },
-            inTaki: false
-        });
         
-        db.ref('chat').push({text: 'המשחק התחיל!'});
+        db.ref('state').set({
+            turn: players[0],
+            pile: { c: 'red', v: '1' }
+        });
     }
 
-    function resetGame() {
-        if(confirm("לאפס הכל?")) {
-            db.ref('/').remove();
-            location.reload();
+    function reset() {
+        db.ref('/').remove();
+        location.reload();
+    }
+
+    // צ'אט
+    document.getElementById('chat-input').onkeypress = (e) => {
+        if(e.key === 'Enter') {
+            db.ref('chat').push({u: myName, t: e.target.value});
+            e.target.value = '';
         }
-    }
-
-    function toggleMenu() {
-        const el = document.getElementById('admin-panel');
-        el.style.display = el.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function showToast(txt) {
-        const t = document.getElementById('toast');
-        t.innerText = txt;
-        t.style.opacity = 1;
-        setTimeout(() => t.style.opacity = 0, 2000);
-    }
+    };
 </script>
 </body>
 </html>
