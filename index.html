@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>TAKI MASTER - ONLINE</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; color: white; font-family: Arial, sans-serif; text-align: center; }
+        #login-screen { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; }
+        #game-container { display: none; height: 100vh; flex-direction: row; }
+        #sidebar { width: 250px; background: #222; border-left: 2px solid #d4af37; display: flex; flex-direction: column; text-align: right; padding: 10px; }
+        #main-board { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .card { width: 80px; height: 120px; border: 2px solid white; border-radius: 10px; display: inline-block; margin: 5px; line-height: 120px; font-size: 20px; font-weight: bold; background: #444; }
+        #chat-box { flex: 1; overflow-y: auto; background: #333; margin: 10px 0; padding: 5px; font-size: 14px; }
+        input, button { padding: 10px; margin: 5px; border-radius: 5px; }
+        .btn-gold { background: #d4af37; color: black; font-weight: bold; cursor: pointer; border: none; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <h1 style="color: #d4af37;">TAKI MASTER</h1>
+    <input type="text" id="username" placeholder="הכנס שם...">
+    <button class="btn-gold" onclick="joinGame()">התחל לשחק</button>
+</div>
+
+<div id="game-container" id="game-ui">
+    <div id="sidebar">
+        <h3 style="color: #d4af37;">שחקנים וחיים</h3>
+        <div id="player-list"></div>
+        <div id="chat-box"></div>
+        <input type="text" id="chat-input" placeholder="הודעה...">
+        <button class="btn-gold" onclick="sendMsg()">שלח</button>
+    </div>
+    <div id="main-board">
+        <h2 id="turn-msg">מחכה לשחקנים...</h2>
+        <div id="pile-area">
+            <div class="card" style="background:white; color:black;">8</div>
+        </div>
+        <div id="my-hand" style="margin-top: 50px;">
+            <div class="card" style="background:blue;">3</div>
+            <div class="card" style="background:red;">+2</div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTcYiOhazu3kfn5YhjAnjDBCJMyGaqvA4",
+        authDomain: "takimaster-39f6c.firebaseapp.com",
+        databaseURL: "https://takimaster-39f6c-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "takimaster-39f6c",
+        storageBucket: "takimaster-39f6c.firebasestorage.app",
+        messagingSenderId: "6879693086",
+        appId: "1:6879693086:web:298b7f22fe662a2148210f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let myId, myName, privateId = null;
+
+    window.joinGame = function() {
+        myName = document.getElementById('username').value;
+        if(!myName) return alert("שם חובה!");
+
+        const pRef = push(ref(db, 'players'));
+        myId = pRef.key;
+        onDisconnect(pRef).remove();
+
+        set(pRef, { id: myId, name: myName, hp: 100 });
+
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        
+        // סנכרון שחקנים
+        onValue(ref(db, 'players'), (snap) => {
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            const data = snap.val();
+            for(let id in data) {
+                list.innerHTML += `<div onclick="setPrivate('${id}')" style="cursor:pointer; margin-bottom:5px;">
+                    ${data[id].name} <b style="color:red;">❤️${data[id].hp}</b>
+                </div>`;
+            }
+        });
+
+        // סנכרון צ'אט
+        onValue(ref(db, 'chat'), (snap) => {
+            const box = document.getElementById('chat-box');
+            box.innerHTML = '';
+            const msgs = snap.val();
+            for(let id in msgs) {
+                const m = msgs[id];
+                if(!m.target || m.target === myId || m.senderId === myId) {
+                    box.innerHTML += `<div><b>${m.target ? '🔒 ' : ''}${m.sender}:</b> ${m.text}</div>`;
+                }
+            }
+            box.scrollTop = box.scrollHeight;
+        });
+    };
+
+    window.setPrivate = function(id) {
+        privateId = id;
+        alert("לוחש לשחקן נבחר");
+    };
+
+    window.sendMsg = function() {
+        const input = document.getElementById('chat-input');
+        if(!input.value) return;
+        push(ref(db, 'chat'), {
+            sender: myName,
+            senderId: myId,
+            text: input.value,
+            target: privateId
+        });
+        input.value = '';
+        privateId = null;
+    };
+</script>
+</body>
+</html>
