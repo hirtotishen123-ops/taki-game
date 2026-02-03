@@ -3,53 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAKI ULTIMATE - VERIFIED</title>
+    <title>TAKI PRO - V5 FORCE</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --gold: #ffd700; --red: #ff4d4d; --blue: #4d94ff; --green: #4dff88; --yellow: #ffff4d; }
-        * { box-sizing: border-box; user-select: none; font-family: system-ui, sans-serif; }
-        body { margin: 0; background: #0a2b12; color: white; height: 100dvh; overflow: hidden; }
+        :root { --gold: #ffd700; --red: #ff4d4d; --bg: #0a2b12; }
+        * { box-sizing: border-box; user-select: none; font-family: sans-serif; }
+        body { margin: 0; background: var(--bg); color: white; height: 100dvh; overflow: hidden; }
 
-        .overlay { position: fixed; inset: 0; background: #000; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .btn { padding: 15px 40px; background: var(--gold); border: none; border-radius: 30px; font-weight: bold; cursor: pointer; color: black; font-size: 18px; margin: 10px; }
+        /* מסך כניסה חזק יותר */
+        #login-screen { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #game-board { display: none; width: 100vw; height: 100dvh; position: relative; }
         
-        #game-board { display: none; width: 100vw; height: 100dvh; position: relative; background: radial-gradient(circle, #1b5e20, #0a2b12); }
-        
-        .player-slot { position: absolute; background: rgba(0,0,0,0.8); padding: 12px; border-radius: 15px; text-align: center; min-width: 110px; border: 2px solid transparent; z-index: 5; }
-        .active-turn { border-color: var(--gold); box-shadow: 0 0 20px var(--gold); background: rgba(255, 215, 0, 0.2); }
+        .btn { padding: 15px 35px; background: var(--gold); border: none; border-radius: 25px; font-weight: bold; cursor: pointer; color: black; font-size: 18px; }
+        .player-slot { position: absolute; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 10px; text-align: center; min-width: 100px; border: 2px solid transparent; }
+        .active-turn { border-color: var(--gold); box-shadow: 0 0 15px var(--gold); }
 
         #slot-bottom { bottom: 120px; left: 50%; transform: translateX(-50%); }
         #slot-top { top: 20px; left: 50%; transform: translateX(-50%); }
-        #slot-left { top: 50%; left: 20px; transform: translateY(-50%); }
-        #slot-right { top: 50%; right: 20px; transform: translateY(-50%); }
+        #slot-left { top: 40%; left: 10px; }
+        #slot-right { top: 40%; right: 10px; }
 
-        .card { width: 55px; height: 85px; background: white; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: black; border: 2px solid #ccc; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin: 2px; }
+        .card { width: 50px; height: 75px; background: white; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; color: black; border: 1px solid #000; margin: 2px; }
         .c-red { background: var(--red); color: white; }
-        .c-blue { background: var(--blue); color: white; }
-        .c-green { background: var(--green); color: black; }
-        .c-yellow { background: var(--yellow); color: black; }
+        .c-blue { background: #4d94ff; color: white; }
+        .c-green { background: #4dff88; color: black; }
+        .c-yellow { background: #ffff4d; color: black; }
         .c-special { background: #222; color: var(--gold); border: 2px solid var(--gold); }
 
-        #my-hand { position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: center; gap: 5px; z-index: 100; overflow-x: auto; padding: 10px; }
-        #center-area { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 20px; }
-
-        #admin-panel { position: absolute; top: 10px; left: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
-        .ice-cream-alert { color: #ff99cc; font-weight: bold; font-size: 14px; display: block; margin-top: 5px; }
+        #my-hand { position: absolute; bottom: 10px; width: 100%; display: flex; justify-content: center; overflow-x: auto; padding: 10px; z-index: 100; }
+        #center-area { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); display: flex; gap: 15px; }
+        
+        .ice-cream-alert { color: #ff99cc; font-size: 12px; display: block; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="login-screen" class="overlay">
+<div id="login-screen">
     <h1 style="color:var(--gold)">TAKI PRO</h1>
-    <input type="text" id="user-input" style="padding:15px; text-align:center; border-radius:10px; border:none; width: 250px;" placeholder="שם שחקן">
-    <button class="btn" onclick="preJoin()">כניסה</button>
+    <input type="text" id="user-name" style="padding:15px; border-radius:10px; border:none; width:200px; text-align:center;" placeholder="הקלד שם...">
+    <br>
+    <button class="btn" onclick="forceJoin()">כניסה מיידית</button>
 </div>
 
 <div id="game-board">
-    <div id="admin-panel" style="display:none">
-        <button class="btn" style="font-size:12px; padding:10px;" onclick="dealCards()">חלק קלפים</button>
-        <button class="btn" style="font-size:12px; padding:10px; background:red; color:white;" onclick="resetAll()">איפוס</button>
+    <div id="admin-controls" style="display:none; position:absolute; top:10px; left:10px; z-index:500;">
+        <button class="btn" style="font-size:12px; padding:8px;" onclick="startGame()">חלק קלפים</button>
+        <button class="btn" style="font-size:12px; padding:8px; background:red; color:white;" onclick="resetGame()">איפוס</button>
     </div>
 
     <div id="slot-top" class="player-slot"></div>
@@ -58,14 +58,15 @@
     <div id="slot-bottom" class="player-slot"></div>
 
     <div id="center-area">
-        <div id="draw-pile" class="card c-special" style="cursor:pointer" onclick="playerDraw()">קופה</div>
-        <div id="last-played"></div>
+        <div class="card c-special" onclick="drawCard()" style="cursor:pointer">קופה</div>
+        <div id="discard-pile"></div>
     </div>
+    
     <div id="my-hand"></div>
 </div>
 
 <script>
-    const config = {
+    const firebaseConfig = {
         apiKey: "AIzaSyDTcYiOhazu3kfn5YhjAnjDBCJMyGaqvA4",
         authDomain: "takimaster-39f6c.firebaseapp.com",
         databaseURL: "https://takimaster-39f6c-default-rtdb.europe-west1.firebasedatabase.app",
@@ -75,152 +76,156 @@
         appId: "1:6879693086:web:298b7f22fe662a2148210f"
     };
 
-    if (!firebase.apps.length) firebase.initializeApp(config);
-    const db = firebase.database();
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
     
-    let myId = null;
-    let myName = "";
-    let isAdmin = false;
-    let players = [];
-    let gameState = {};
+    let uid = null;
+    let uName = "";
+    let isManager = false;
+    let localPlayers = [];
+    let currentGameState = {};
 
-    function preJoin() {
-        const input = document.getElementById('user-input');
-        let name = input.value.trim();
-        if(!name) return;
+    function forceJoin() {
+        const nameInput = document.getElementById('user-name');
+        uName = nameInput.value.trim();
+        if (!uName) return;
 
-        if(name === "מנהל") {
-            isAdmin = true;
-            name = "המנהל";
-            document.getElementById('admin-panel').style.display = 'flex';
-        }
-
-        myName = name;
-        
-        // מעבר מסך מיידי ללא המתנה לשרת
+        // הסתרה מיידית של מסך הכניסה
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('game-board').style.display = 'block';
 
-        const ref = db.ref('players').push();
-        myId = ref.key;
-        
-        ref.set({ id: myId, name: myName, cards: 0 }).then(() => {
-            ref.onDisconnect().remove();
-            startSync();
-        }).catch(err => {
-            console.error("Firebase Error:", err);
-            alert("שגיאת חיבור. נסה לרענן.");
+        if (uName === "מנהל") {
+            isManager = true;
+            document.getElementById('admin-controls').style.display = 'block';
+        }
+
+        // יצירת שחקן ב-Firebase
+        const playerRef = database.ref('players').push();
+        uid = playerRef.key;
+        playerRef.set({ id: uid, name: uName, cardCount: 0 });
+        playerRef.onDisconnect().remove();
+
+        initSync();
+    }
+
+    function initSync() {
+        // סנכרון שחקנים
+        database.ref('players').on('value', snap => {
+            const data = snap.val() || {};
+            localPlayers = Object.keys(data);
+            renderPlayers(data);
+        });
+
+        // סנכרון מצב משחק
+        database.ref('game_state').on('value', snap => {
+            currentGameState = snap.val() || {};
+            renderTable();
+        });
+
+        // סנכרון יד אישית
+        database.ref(`player_hands/${uid}`).on('value', snap => {
+            renderMyHand(snap.val() || []);
+            database.ref(`players/${uid}/cardCount`).set((snap.val() || []).length);
+        });
+
+        // סנכרון איפוס
+        database.ref('reset_trigger').on('value', snap => {
+            if (snap.val() === true && !isManager) location.reload();
         });
     }
 
-    function startSync() {
-        // האזנה לשחקנים - תמיד פעיל
-        db.ref('players').on('value', s => {
-            const data = s.val() || {};
-            players = Object.keys(data);
-            refreshPlayers(data);
-        });
-
-        // האזנה למצב המשחק עם הגנה מערכים ריקים
-        db.ref('state').on('value', s => {
-            gameState = s.val() || { turn: "", pile: {color: "special", value: "TAKI"} };
-            updateUI();
-        });
-
-        // האזנה לקלפים שלי
-        db.ref(`hands/${myId}`).on('value', s => {
-            renderHand(s.val() || []);
-            db.ref(`players/${myId}/cards`).set((s.val() || []).length);
-        });
-
-        // האזנה לאיפוס
-        db.ref('reset').on('value', s => {
-            if(s.val() === true && !isAdmin) location.reload();
-        });
-    }
-
-    function refreshPlayers(data) {
+    function renderPlayers(allPlayers) {
         const slots = ['slot-bottom', 'slot-left', 'slot-top', 'slot-right'];
         slots.forEach(s => document.getElementById(s).style.display = 'none');
-        
-        if(!myId || players.indexOf(myId) === -1) return;
-        
-        const myIdx = players.indexOf(myId);
-        players.forEach((pid, i) => {
-            let rel = (i - myIdx + players.length) % players.length;
-            let sid = (rel === 0) ? 'slot-bottom' : (rel === 1) ? (players.length === 2 ? 'slot-top' : 'slot-left') : (rel === 2) ? 'slot-top' : 'slot-right';
-            const el = document.getElementById(sid);
-            if(!el) return;
+
+        const myIndex = localPlayers.indexOf(uid);
+        if (myIndex === -1) return;
+
+        localPlayers.forEach((pid, index) => {
+            let position = (index - myIndex + localPlayers.length) % localPlayers.length;
+            let slotId = (position === 0) ? 'slot-bottom' : (position === 1) ? (localPlayers.length === 2 ? 'slot-top' : 'slot-left') : (position === 2) ? 'slot-top' : 'slot-right';
             
+            const el = document.getElementById(slotId);
             el.style.display = 'block';
-            el.className = `player-slot ${gameState.turn === pid ? 'active-turn' : ''}`;
+            el.className = `player-slot ${currentGameState.turn === pid ? 'active-turn' : ''}`;
             
-            let nameTxt = (rel === 0) ? "אני" : data[pid].name;
-            let content = `<b>${nameTxt}</b><br>🎴 ${data[pid].cards || 0}`;
+            let label = (position === 0) ? "אני" : allPlayers[pid].name;
+            let html = `<b>${label}</b><br>🎴 ${allPlayers[pid].cardCount || 0}`;
             
-            if(data[pid].name.includes("זוהר")) {
-                content += `<span id="ice-${pid}" class="ice-cream-alert">הפעם לא תקבלי גלידה 🍦🍦</span>`;
-                setTimeout(() => { if(document.getElementById(`ice-${pid}`)) document.getElementById(`ice-${pid}`).style.display = 'none'; }, 2000);
+            if (allPlayers[pid].name.includes("זוהר")) {
+                html += `<span class="ice-cream-alert" id="ice-${pid}">הפעם לא תקבלי גלידה 🍦🍦</span>`;
+                setTimeout(() => { if(document.getElementById(`ice-${pid}`)) document.getElementById(`ice-${pid}`).style.visibility = 'hidden'; }, 2000);
             }
-            el.innerHTML = content;
+            el.innerHTML = html;
         });
     }
 
-    function updateUI() {
-        const p = document.getElementById('last-played');
-        if(!gameState.pile) return;
-        const c = gameState.pile;
-        p.innerHTML = `<div class="card c-${c.color}">${c.value}</div>`;
+    function renderTable() {
+        const discard = document.getElementById('discard-pile');
+        if (currentGameState.topCard) {
+            const c = currentGameState.topCard;
+            discard.innerHTML = `<div class="card c-${c.color}">${c.val}</div>`;
+        }
     }
 
-    function renderHand(hand) {
-        const div = document.getElementById('my-hand');
-        div.innerHTML = '';
-        hand.forEach((c, i) => {
-            const el = document.createElement('div');
-            el.className = `card c-${c.color}`;
-            el.innerHTML = c.value;
-            el.style.cursor = 'pointer';
-            el.onclick = () => {
-                if(gameState.turn !== myId) return;
-                db.ref(`hands/${myId}`).once('value', s => {
-                    let h = s.val(); h.splice(i, 1);
-                    db.ref(`hands/${myId}`).set(h);
-                    db.ref('state').update({ pile: c, turn: players[(players.indexOf(myId)+1)%players.length] });
-                });
-            };
-            div.appendChild(el);
+    function renderMyHand(cards) {
+        const handDiv = document.getElementById('my-hand');
+        handDiv.innerHTML = '';
+        cards.forEach((c, i) => {
+            const cardEl = document.createElement('div');
+            cardEl.className = `card c-${c.color}`;
+            cardEl.innerHTML = c.val;
+            cardEl.onclick = () => playCard(i, c);
+            handDiv.appendChild(cardEl);
         });
     }
 
-    function playerDraw() {
-        if(gameState.turn !== myId) return;
-        db.ref(`hands/${myId}`).once('value', s => {
-            let h = s.val() || [];
-            h.push(randCard());
-            db.ref(`hands/${myId}`).set(h);
-            db.ref('state/turn').set(players[(players.indexOf(myId)+1)%players.length]);
+    function playCard(index, card) {
+        if (currentGameState.turn !== uid) return;
+        database.ref(`player_hands/${uid}`).once('value', snap => {
+            let hand = snap.val();
+            hand.splice(index, 1);
+            database.ref(`player_hands/${uid}`).set(hand);
+            database.ref('game_state').update({
+                topCard: card,
+                turn: localPlayers[(localPlayers.indexOf(uid) + 1) % localPlayers.length]
+            });
         });
     }
 
-    function randCard() {
+    function drawCard() {
+        if (currentGameState.turn !== uid) return;
+        database.ref(`player_hands/${uid}`).once('value', snap => {
+            let hand = snap.val() || [];
+            hand.push(generateRandomCard());
+            database.ref(`player_hands/${uid}`).set(hand);
+            database.ref('game_state/turn').set(localPlayers[(localPlayers.indexOf(uid) + 1) % localPlayers.length]);
+        });
+    }
+
+    function generateRandomCard() {
         const colors = ['red', 'blue', 'green', 'yellow'];
-        const values = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'stop', 'taki'];
-        return {color: colors[Math.floor(Math.random()*4)], value: values[Math.floor(Math.random()*values.length)]};
+        const vals = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'stop', 'taki'];
+        return { color: colors[Math.floor(Math.random() * 4)], val: vals[Math.floor(Math.random() * vals.length)] };
     }
 
-    function dealCards() {
-        players.forEach(pid => {
-            let h = []; for(let i=0; i<8; i++) h.push(randCard());
-            db.ref(`hands/${pid}`).set(h);
+    function startGame() {
+        localPlayers.forEach(pid => {
+            let hand = [];
+            for (let i = 0; i < 8; i++) hand.push(generateRandomCard());
+            database.ref(`player_hands/${pid}`).set(hand);
         });
-        db.ref('state').set({ turn: players[0], pile: randCard() });
-        db.ref('reset').set(false);
+        database.ref('game_state').set({
+            turn: localPlayers[0],
+            topCard: generateRandomCard()
+        });
+        database.ref('reset_trigger').set(false);
     }
 
-    function resetAll() {
-        db.ref('reset').set(true);
-        db.ref('state').remove(); db.ref('hands').remove();
+    function resetGame() {
+        database.ref('reset_trigger').set(true);
+        database.ref('game_state').remove();
+        database.ref('player_hands').remove();
     }
 </script>
 </body>
