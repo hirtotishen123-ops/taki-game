@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAKI PRO - FULL ACCESS</title>
+    <title>TAKI ONLINE</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
@@ -49,9 +49,9 @@
 <body>
 
 <div id="login-screen" class="overlay">
-    <h1 style="color:var(--gold)">TAKI PRO</h1>
-    <input type="text" id="user-input" style="padding:10px; text-align:center; border-radius:5px; border:none;" placeholder="שם שחקן / מנהל">
-    <button class="btn" style="margin-top:10px" onclick="preJoin()">כנס (Enter)</button>
+    <h1 style="color:var(--gold)">TAKI ONLINE</h1>
+    <input type="text" id="user-input" style="padding:10px; text-align:center; border-radius:5px; border:none;" placeholder="הקלד שם ולחץ כניסה">
+    <button class="btn" style="margin-top:10px" onclick="preJoin()">כניסה</button>
 </div>
 
 <div id="win-screen" class="overlay" style="display:none">
@@ -80,7 +80,7 @@
         <div id="draw-pile" class="card c-special" style="cursor:pointer" onclick="playerDraw()">קופה</div>
         <div id="last-played"></div>
     </div>
-    <button id="close-taki-btn" class="btn btn-red" style="display:none; position:absolute; bottom:200px; left:50%; transform:translateX(-50%);" onclick="finishTaki()">סגור טאקי</button>
+    <button id="close-taki-btn" class="btn btn-red" style="display:none; position:absolute; bottom:200px; left:50%; transform:translateX(-50%);" onclick="finishTaki()">טאקי סגור</button>
     <div id="my-hand"></div>
 </div>
 
@@ -106,26 +106,33 @@
 
     firebase.initializeApp(config);
     const db = firebase.database();
-    let myId, myName, isAdmin = false, gameState = {}, players = [];
+    let myId, myName, isAdmin = false, gameState = {}, players = [], isJoined = false;
 
     document.getElementById('user-input').onkeypress = (e) => { if(e.key==='Enter') preJoin(); };
     document.getElementById('chat-in').onkeypress = (e) => { if(e.key==='Enter') sendMsg(); };
 
     function preJoin() {
+        if(isJoined) return; // מונע כניסה כפולה
         let name = document.getElementById('user-input').value.trim();
         if(!name) return;
+        
         if(name === "מנהל") {
             isAdmin = true;
             name = prompt("כינוי מנהל:") || "מנהל";
             document.getElementById('admin-panel').style.display = 'flex';
         }
-        myId = db.ref('players').push().key;
+
+        const newPlayerRef = db.ref('players').push();
+        myId = newPlayerRef.key;
         myName = name;
-        db.ref(`players/${myId}`).set({ id: myId, name: myName, cards: 0, ready: false });
-        db.ref(`players/${myId}`).onDisconnect().remove();
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('game-board').style.display = 'block';
-        startSync();
+
+        newPlayerRef.set({ id: myId, name: myName, cards: 0, ready: false }).then(() => {
+            isJoined = true;
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('game-board').style.display = 'block';
+            newPlayerRef.onDisconnect().remove();
+            startSync();
+        });
     }
 
     function startSync() {
@@ -134,38 +141,44 @@
             if(gameState.winner) showWinScreen();
             else { document.getElementById('win-screen').style.display = 'none'; updateUI(); }
         });
+
         db.ref('players').on('value', s => {
             const data = s.val() || {};
             players = Object.keys(data);
             refreshPlayers(data);
         });
+
         db.ref(`hands/${myId}`).on('value', s => {
             renderHand(s.val() || []);
             db.ref(`players/${myId}/cards`).set((s.val() || []).length);
         });
+
         db.ref('chat').on('child_added', s => {
             const m = s.val();
             const b = document.getElementById('chat-msgs');
             b.innerHTML += `<div><b>${m.u}:</b> ${m.t}</div>`;
             b.scrollTop = b.scrollHeight;
         });
+
         db.ref('reset').on('value', s => { if(s.val() === true && !isAdmin) location.reload(); });
     }
 
     function refreshPlayers(data) {
         const slots = ['slot-bottom', 'slot-left', 'slot-top', 'slot-right'];
         slots.forEach(s => document.getElementById(s).style.display = 'none');
+        
         const myIdx = players.indexOf(myId);
         players.forEach((pid, i) => {
             let rel = (i - myIdx + players.length) % players.length;
             let sid = (rel === 0) ? 'slot-bottom' : (rel === 1) ? (players.length === 2 ? 'slot-top' : 'slot-left') : (rel === 2) ? 'slot-top' : 'slot-right';
             const el = document.getElementById(sid);
             if(!el) return;
+            
             el.style.display = 'block';
             el.className = `player-slot ${gameState.turn === pid ? 'active-turn' : ''}`;
             
             let nameTag = (rel === 0) ? "" : `<b>${data[pid].name}</b><br>`;
-            let cardCount = `🎴 ${data[pid].cards}`;
+            let cardCount = `🎴 ${data[pid].cards || 0}`;
             
             // לוגיקת זוהר
             if(data[pid].name.includes("זוהר")) {
@@ -177,7 +190,7 @@
         });
     }
 
-    // שאר פונקציות המשחק זהות כדי לשמור על יציבות
+    // --- שאר הפונקציות (לוגיקת משחק) ---
     function updateUI() {
         if(!gameState.pile) return;
         const p = document.getElementById('last-played');
@@ -289,11 +302,34 @@
             btnArea.innerHTML += `<button class="btn" style="background:#4d94ff; color:white;" onclick="dealCards()">התחל משחק חדש עכשיו</button>`;
             btnArea.innerHTML += `<button class="btn btn-red" onclick="resetAll()">איפוס לכולם</button>`;
         }
+
+        db.ref('hands').once('value', s => {
+            const hands = s.val() || {};
+            const container = document.getElementById('cards-reveal');
+            container.innerHTML = '';
+            players.forEach(pid => {
+                db.ref(`players/${pid}`).once('value', ps => {
+                    const pData = ps.val();
+                    if(!pData) return;
+                    let html = `<div style="margin-bottom:10px"><b>${pData.name}:</b><div class="revealed-hand">`;
+                    (hands[pid] || []).forEach(c => {
+                        const val = c.value === 'change_color' ? '🎨' : (c.value === 'change_dir' ? '⇄' : c.value);
+                        html += `<div class="card c-${c.color}" style="width:30px; height:45px; font-size:10px">${val}</div>`;
+                    });
+                    html += `</div></div>`;
+                    container.innerHTML += html;
+                });
+            });
+        });
     }
     
     function voteRestart() {
         db.ref(`players/${myId}/ready`).set(true);
         document.getElementById('btn-ready-vote').disabled = true;
+        db.ref('players').once('value', s => {
+            const all = Object.values(s.val() || {});
+            if(all.every(p => p.ready)) dealCards();
+        });
     }
 </script>
 </body>
