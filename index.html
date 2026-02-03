@@ -2,64 +2,41 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TAKI MASTER - FIXED</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAKI TEST</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        :root { --gold: #d4af37; }
-        * { box-sizing: border-box; font-family: sans-serif; }
-        body { margin: 0; background: #0a2e12; color: white; height: 100vh; overflow: hidden; }
-        
-        #login-screen { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #game-ui { display: none; height: 100vh; flex-direction: row; }
-        
-        #side-panel { width: 220px; background: #111; border-right: 2px solid var(--gold); display: flex; flex-direction: column; padding: 10px; }
-        #table { flex: 1; position: relative; background: radial-gradient(circle, #1a5d2e, #0a2e12); margin: 10px; border-radius: 40px; border: 5px solid #3d2b1f; }
-        
-        .player-slot { position: absolute; background: rgba(0,0,0,0.7); padding: 8px; border-radius: 10px; text-align: center; min-width: 80px; font-size: 12px; border: 1px solid #444; }
-        .slot-0 { bottom: 10px; left: 50%; transform: translateX(-50%); border-color: var(--gold); }
-        .slot-1 { left: 10px; top: 50%; transform: translateY(-50%); }
-        .slot-2 { top: 10px; left: 50%; transform: translateX(-50%); }
-        .slot-3 { right: 10px; top: 50%; transform: translateY(-50%); }
-
-        #chat-box { flex: 1; overflow-y: auto; font-size: 12px; margin: 10px 0; background: rgba(255,255,255,0.05); padding: 5px; }
-        input, button { padding: 10px; border-radius: 5px; border: none; margin: 2px; }
-        .btn-gold { background: var(--gold); color: #000; font-weight: bold; width: 100%; cursor: pointer; }
-        .btn-red { background: #ff4444; color: #fff; width: 100%; cursor: pointer; }
+        body { background: #0a2e12; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .box { border: 2px solid gold; padding: 20px; border-radius: 15px; background: rgba(0,0,0,0.5); max-width: 400px; margin: auto; }
+        input { padding: 10px; width: 80%; margin: 10px; border-radius: 5px; }
+        button { padding: 10px 20px; background: gold; border: none; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        #chat { height: 150px; overflow-y: auto; border: 1px solid #444; margin: 10px; padding: 5px; background: #111; text-align: right; }
+        #admin-panel { display: none; margin-top: 20px; border-top: 2px dashed red; padding-top: 10px; }
     </style>
 </head>
 <body>
 
-<div id="login-screen">
-    <h1 style="color:var(--gold)">TAKI MASTER</h1>
-    <input type="text" id="username" placeholder="שם שחקן או 'מנהל'..." style="width:250px; text-align:center;">
-    <button class="btn-gold" style="width:250px;" onclick="joinGame()">הצטרף</button>
-</div>
+    <h1>TAKI MASTER ELITE</h1>
+    
+    <div id="login" class="box">
+        <input type="text" id="nameInp" placeholder="שם שחקן (או 'מנהל')">
+        <button onclick="start()">היכנס למשחק</button>
+    </div>
 
-<div id="game-ui">
-    <div id="side-panel">
-        <div id="admin-tools" style="display:none">
-            <button class="btn-gold" onclick="alert('מחלק קלפים...')">התחל משחק</button>
-            <button class="btn-red" onclick="resetGame()">איפוס וסגירה</button>
-        </div>
-        <div id="chat-box"></div>
-        <input type="text" id="chat-input" placeholder="הודעה (אנטר לשליחה)...">
-    </div>
-    <div id="table">
-        <div id="p0" class="player-slot slot-0"></div>
-        <div id="p1" class="player-slot slot-1"></div>
-        <div id="p2" class="player-slot slot-2"></div>
-        <div id="p3" class="player-slot slot-3"></div>
-        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); border:2px solid white; padding:20px; border-radius:10px;">
-            <b>קופה</b>
+    <div id="game" class="box" style="display:none;">
+        <h3>שלום, <span id="myName"></span></h3>
+        <div id="chat"></div>
+        <input type="text" id="msgInp" placeholder="הודעה ואז אנטר">
+        
+        <div id="admin-panel">
+            <p style="color:red;">לוח מנהל</p>
+            <button onclick="resetGame()" style="background:red; color:white;">איפוס וסגירת חדר</button>
         </div>
     </div>
-</div>
 
 <script>
-    // הגדרות ה-Firebase שלך (גרסת SDK 8 ליציבות מקסימלית)
-    const firebaseConfig = {
+    const config = {
         apiKey: "AIzaSyDTcYiOhazu3kfn5YhjAnjDBCJMyGaqvA4",
         authDomain: "takimaster-39f6c.firebaseapp.com",
         databaseURL: "https://takimaster-39f6c-default-rtdb.europe-west1.firebasedatabase.app",
@@ -69,70 +46,46 @@
         appId: "1:6879693086:web:298b7f22fe662a2148210f"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    firebase.initializeApp(config);
     const db = firebase.database();
-    let myId, myName, isAdmin = false;
+    let user = "";
 
-    function joinGame() {
-        let val = document.getElementById('username').value.trim();
+    function start() {
+        let val = document.getElementById('nameInp').value;
         if(!val) return;
 
         if(val === "מנהל") {
-            isAdmin = true;
-            myName = prompt("שם תצוגה למנהל:") || "המנהל";
-            document.getElementById('admin-tools').style.display = 'block';
+            user = prompt("איך תרצה שיראו אותך?") || "המנהל";
+            document.getElementById('admin-panel').style.display = 'block';
         } else {
-            myName = val;
+            user = val;
         }
 
-        const pRef = db.ref('players').push();
-        myId = pRef.key;
-        pRef.set({ id: myId, name: myName, hp: 100 });
-        pRef.onDisconnect().remove();
+        document.getElementById('login').style.display = 'none';
+        document.getElementById('game').style.display = 'block';
+        document.getElementById('myName').innerText = user;
 
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('game-ui').style.display = 'flex';
-        sync();
-    }
-
-    function sync() {
-        // שחקנים
-        db.ref('players').on('value', (snap) => {
-            const players = snap.val() || {};
-            const ids = Object.keys(players);
-            for(let i=0; i<4; i++) {
-                const el = document.getElementById('p'+i);
-                if(ids[i]) {
-                    el.style.display = 'block';
-                    el.innerHTML = `<b>${players[ids[i]].name}</b><br>❤ ${players[ids[i]].hp}`;
-                } else {
-                    el.style.display = 'none';
-                }
-            }
-        });
-
-        // צ'אט
+        // חיבור לצאט
         db.ref('chat').on('value', (snap) => {
-            const box = document.getElementById('chat-box');
+            const box = document.getElementById('chat');
             box.innerHTML = '';
             snap.forEach(m => {
-                const msg = m.val();
-                box.innerHTML += `<div><b>${msg.sender}:</b> ${msg.text}</div>`;
+                box.innerHTML += `<div><b>${m.val().user}:</b> ${m.val().text}</div>`;
             });
             box.scrollTop = box.scrollHeight;
         });
     }
 
     // שליחה ב-Enter
-    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+    document.getElementById('msgInp').addEventListener('keypress', (e) => {
         if(e.key === 'Enter') {
-            db.ref('chat').push({ sender: myName, text: e.target.value });
+            db.ref('chat').push({ user: user, text: e.target.value });
             e.target.value = '';
         }
     });
 
     function resetGame() {
-        if(confirm("למחוק הכל?")) {
+        if(confirm("לאפס הכל?")) {
             db.ref('/').remove();
             location.reload();
         }
