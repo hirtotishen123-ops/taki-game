@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TAKI Online - Premium Edition</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // ה-Config שלך מוטמע כאן
+        const firebaseConfig = {
+            apiKey: "AIzaSyDPV8-BgOuYYKJf72zvB6aZW3MnsqB7CxU",
+            authDomain: "takionline-a688b.firebaseapp.com",
+            databaseURL: "https://takionline-a688b-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "takionline-a688b",
+            storageBucket: "takionline-a688b.firebasestorage.app",
+            messagingSenderId: "862789290290",
+            appId: "1:862789290290:web:16fefa95c741a041952f2b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // משתני משחק גלובליים
+        let myId = null;
+        let myName = "";
+        let gameState = {};
+
+        // --- אלמנטים ב-DOM ---
+        const loginScreen = document.getElementById('login-screen');
+        const gameScreen = document.getElementById('game-container');
+        const board = document.getElementById('board');
+        const handDiv = document.getElementById('my-hand');
+        const chatContent = document.getElementById('chat-messages');
+
+        // --- כניסה למשחק ---
+        window.joinGame = () => {
+            myName = document.getElementById('username').value;
+            if (!myName) return alert("אנא הכנס שם");
+
+            const playersRef = ref(db, 'players');
+            const newPlayerRef = push(playersRef);
+            myId = newPlayerRef.key;
+
+            // ניקוי המשתמש כשמתנתק
+            onDisconnect(newPlayerRef).remove();
+
+            set(newPlayerRef, {
+                id: myId,
+                name: myName,
+                cards: [],
+                isReady: true
+            });
+
+            loginScreen.style.display = 'none';
+            gameScreen.style.display = 'flex';
+            initGameSync();
+        };
+
+        function initGameSync() {
+            onValue(ref(db), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                renderGame(data);
+            });
+        }
+
+        function renderGame(data) {
+            // כאן תבוא לוגיקת הרינדור של הלוח, הקלפים והצ'אט
+            // בניית הלוח לפי מצב המשחק ב-Firebase
+        }
+
+        window.sendChat = (isPrivate = false, targetId = null) => {
+            const input = document.getElementById('chat-input');
+            if (!input.value) return;
+            
+            push(ref(db, 'chat'), {
+                sender: myName,
+                text: input.value,
+                target: targetId, // null לצאט כללי
+                time: Date.now()
+            });
+            input.value = "";
+        };
+
+    </script>
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark-panel: #1a1a1a;
+            --taki-blue: #2980b9;
+        }
+        body { margin: 0; background: #2c3e50; font-family: sans-serif; color: white; overflow: hidden; }
+        
+        #login-screen {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+        }
+
+        .btn-gold {
+            background: var(--gold); border: none; padding: 10px 25px;
+            font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.3s;
+        }
+
+        #game-container { display: none; height: 100vh; flex-direction: row; }
+
+        #main-area { flex: 3; position: relative; display: flex; flex-direction: column; }
+        
+        #sidebar { flex: 1; background: var(--dark-panel); border-right: 2px solid var(--gold); display: flex; flex-direction: column; }
+
+        #board { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+        #my-hand { 
+            height: 180px; background: rgba(0,0,0,0.4); 
+            display: flex; justify-content: center; align-items: center; gap: -20px;
+            padding: 10px; border-top: 3px solid var(--gold);
+        }
+
+        /* עיצוב קלף פרימיום */
+        .card {
+            width: 80px; height: 120px; border-radius: 10px; border: 3px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: relative;
+            cursor: pointer; transition: 0.2s; background: white; color: black;
+            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;
+        }
+        .card:hover { transform: translateY(-30px) scale(1.1); z-index: 10; }
+
+        .chat-area { flex: 1; overflow-y: auto; padding: 10px; font-size: 14px; }
+        .chat-input-row { display: flex; padding: 10px; background: #111; }
+        input { padding: 10px; border-radius: 5px; border: none; }
+    </style>
+</head>
+<body>
+
+<div id="login-screen">
+    <h1 style="color: var(--gold); font-size: 48px;">TAKI ONLINE</h1>
+    <p>ברוכים הבאים למשחק הטאקי הרשמי (בסגנון חיים שפיר)</p>
+    <input type="text" id="username" placeholder="הכנס את שמך..." style="width: 250px; margin-bottom: 20px;">
+    <button class="btn-gold" onclick="joinGame()">התחבר למשחק</button>
+</div>
+
+<div id="game-container">
+    <div id="sidebar">
+        <div style="padding: 15px; border-bottom: 1px solid #444;">
+            <h2 style="color: var(--gold);">שחקנים בחדר</h2>
+            <div id="player-list"></div>
+        </div>
+        <div class="chat-area" id="chat-messages"></div>
+        <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="הודעה לכולם..." style="flex: 1;">
+            <button class="btn-gold" onclick="sendChat()">שלח</button>
+        </div>
+    </div>
+
+    <div id="main-area">
+        <div id="board">
+            <div id="deck" class="card" style="background: #444; color: white;">TAKI</div>
+            <div id="pile" style="margin-right: 50px;">
+                <div class="card" style="border-color: #e74c3c; color: #e74c3c;">8</div>
+            </div>
+        </div>
+        <div id="my-hand">
+            <div class="card" style="color: #3498db;">3</div>
+            <div class="card" style="color: #2ecc71;">+2</div>
+            <div class="card" style="color: #f1c40f;">Taki</div>
+            <div class="card" style="background: #000; color: #fff;">מלך</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
