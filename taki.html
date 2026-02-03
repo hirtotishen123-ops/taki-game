@@ -3,171 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAKI Online - Premium Edition</title>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, onValue, push, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-        // ה-Config שלך מוטמע כאן
-        const firebaseConfig = {
-            apiKey: "AIzaSyDPV8-BgOuYYKJf72zvB6aZW3MnsqB7CxU",
-            authDomain: "takionline-a688b.firebaseapp.com",
-            databaseURL: "https://takionline-a688b-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "takionline-a688b",
-            storageBucket: "takionline-a688b.firebasestorage.app",
-            messagingSenderId: "862789290290",
-            appId: "1:862789290290:web:16fefa95c741a041952f2b"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        // משתני משחק גלובליים
-        let myId = null;
-        let myName = "";
-        let gameState = {};
-
-        // --- אלמנטים ב-DOM ---
-        const loginScreen = document.getElementById('login-screen');
-        const gameScreen = document.getElementById('game-container');
-        const board = document.getElementById('board');
-        const handDiv = document.getElementById('my-hand');
-        const chatContent = document.getElementById('chat-messages');
-
-        // --- כניסה למשחק ---
-        window.joinGame = () => {
-            myName = document.getElementById('username').value;
-            if (!myName) return alert("אנא הכנס שם");
-
-            const playersRef = ref(db, 'players');
-            const newPlayerRef = push(playersRef);
-            myId = newPlayerRef.key;
-
-            // ניקוי המשתמש כשמתנתק
-            onDisconnect(newPlayerRef).remove();
-
-            set(newPlayerRef, {
-                id: myId,
-                name: myName,
-                cards: [],
-                isReady: true
-            });
-
-            loginScreen.style.display = 'none';
-            gameScreen.style.display = 'flex';
-            initGameSync();
-        };
-
-        function initGameSync() {
-            onValue(ref(db), (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
-                renderGame(data);
-            });
-        }
-
-        function renderGame(data) {
-            // כאן תבוא לוגיקת הרינדור של הלוח, הקלפים והצ'אט
-            // בניית הלוח לפי מצב המשחק ב-Firebase
-        }
-
-        window.sendChat = (isPrivate = false, targetId = null) => {
-            const input = document.getElementById('chat-input');
-            if (!input.value) return;
-            
-            push(ref(db, 'chat'), {
-                sender: myName,
-                text: input.value,
-                target: targetId, // null לצאט כללי
-                time: Date.now()
-            });
-            input.value = "";
-        };
-
-    </script>
+    <title>TAKI Master - Online</title>
     <style>
         :root {
             --gold: #d4af37;
-            --dark-panel: #1a1a1a;
-            --taki-blue: #2980b9;
+            --taki-red: #e74c3c;
+            --taki-blue: #3498db;
+            --taki-green: #2ecc71;
+            --taki-yellow: #f1c40f;
+            --panel-bg: rgba(26, 26, 26, 0.95);
         }
-        body { margin: 0; background: #2c3e50; font-family: sans-serif; color: white; overflow: hidden; }
-        
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle, #2c3e50 0%, #000000 100%);
+            color: white;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* מסך כניסה */
         #login-screen {
             position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
         }
 
-        .btn-gold {
-            background: var(--gold); border: none; padding: 10px 25px;
-            font-weight: bold; cursor: pointer; border-radius: 5px; transition: 0.3s;
+        .premium-input {
+            padding: 12px 20px; border-radius: 25px; border: 2px solid var(--gold);
+            background: transparent; color: white; width: 250px; margin-bottom: 20px; text-align: center;
         }
 
-        #game-container { display: none; height: 100vh; flex-direction: row; }
-
-        #main-area { flex: 3; position: relative; display: flex; flex-direction: column; }
-        
-        #sidebar { flex: 1; background: var(--dark-panel); border-right: 2px solid var(--gold); display: flex; flex-direction: column; }
-
-        #board { flex: 1; display: flex; align-items: center; justify-content: center; }
-
-        #my-hand { 
-            height: 180px; background: rgba(0,0,0,0.4); 
-            display: flex; justify-content: center; align-items: center; gap: -20px;
-            padding: 10px; border-top: 3px solid var(--gold);
+        .btn-play {
+            padding: 12px 40px; border-radius: 25px; border: none;
+            background: var(--gold); color: black; font-weight: bold; cursor: pointer;
+            box-shadow: 0 0 15px var(--gold); transition: 0.3s;
         }
 
-        /* עיצוב קלף פרימיום */
+        /* מבנה המשחק */
+        #game-container { display: none; width: 100%; height: 100%; flex-direction: row; }
+
+        #sidebar {
+            width: 300px; background: var(--panel-bg); border-left: 2px solid var(--gold);
+            display: flex; flex-direction: column;
+        }
+
+        #main-board { flex: 1; display: flex; flex-direction: column; position: relative; }
+
+        /* אזור הצ'אט */
+        .chat-section { flex: 1; display: flex; flex-direction: column; padding: 10px; overflow: hidden; }
+        #chat-msgs { flex: 1; overflow-y: auto; border-bottom: 1px solid #444; margin-bottom: 10px; font-size: 14px; }
+        .msg { margin-bottom: 5px; padding: 5px; border-radius: 5px; background: rgba(255,255,255,0.1); }
+        .msg.private { border: 1px dashed var(--gold); background: rgba(212, 175, 55, 0.1); }
+
+        /* לוח קלפים */
+        #center-pile {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 40px;
+        }
+
         .card {
-            width: 80px; height: 120px; border-radius: 10px; border: 3px solid white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); position: relative;
-            cursor: pointer; transition: 0.2s; background: white; color: black;
-            display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;
+            width: 90px; height: 135px; border-radius: 12px; border: 4px solid white;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.3s;
+            user-select: none; position: relative;
         }
-        .card:hover { transform: translateY(-30px) scale(1.1); z-index: 10; }
+        .card:hover { transform: translateY(-20px) rotate(5deg); z-index: 10; }
+        
+        .card.red { background: var(--taki-red); }
+        .card.blue { background: var(--taki-blue); }
+        .card.green { background: var(--taki-green); }
+        .card.yellow { background: var(--taki-yellow); }
+        .card.special { background: #222; color: var(--gold); }
 
-        .chat-area { flex: 1; overflow-y: auto; padding: 10px; font-size: 14px; }
-        .chat-input-row { display: flex; padding: 10px; background: #111; }
-        input { padding: 10px; border-radius: 5px; border: none; }
+        #my-hand {
+            height: 180px; display: flex; justify-content: center; align-items: center;
+            padding: 20px; gap: -30px; background: rgba(0,0,0,0.3);
+        }
+
+        .player-tag {
+            padding: 5px 15px; border-radius: 15px; background: #333; margin: 5px;
+            cursor: pointer; transition: 0.2s; border: 1px solid transparent;
+        }
+        .player-tag:hover { border-color: var(--gold); }
+        .player-tag.active { box-shadow: 0 0 10px var(--gold); border-color: var(--gold); }
+
     </style>
 </head>
 <body>
 
 <div id="login-screen">
-    <h1 style="color: var(--gold); font-size: 48px;">TAKI ONLINE</h1>
-    <p>ברוכים הבאים למשחק הטאקי הרשמי (בסגנון חיים שפיר)</p>
-    <input type="text" id="username" placeholder="הכנס את שמך..." style="width: 250px; margin-bottom: 20px;">
-    <button class="btn-gold" onclick="joinGame()">התחבר למשחק</button>
+    <h1 style="color: var(--gold); font-size: 50px; margin-bottom: 10px;">TAKI MASTER</h1>
+    <p style="margin-bottom: 30px; opacity: 0.8;">המשחק המקורי של חיים שפיר - גרסת האונליין</p>
+    <input type="text" id="username" class="premium-input" placeholder="איך קוראים לך?">
+    <button class="btn-play" onclick="joinGame()">התחבר למשחק</button>
 </div>
 
 <div id="game-container">
     <div id="sidebar">
-        <div style="padding: 15px; border-bottom: 1px solid #444;">
-            <h2 style="color: var(--gold);">שחקנים בחדר</h2>
+        <div style="padding: 15px;">
+            <h3 style="color: var(--gold);">שחקנים (לחץ לצאט פרטי)</h3>
             <div id="player-list"></div>
         </div>
-        <div class="chat-area" id="chat-messages"></div>
-        <div class="chat-input-row">
-            <input type="text" id="chat-input" placeholder="הודעה לכולם..." style="flex: 1;">
-            <button class="btn-gold" onclick="sendChat()">שלח</button>
+        <div class="chat-section">
+            <div id="chat-msgs"></div>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="chat-input" placeholder="הודעה..." style="flex:1; padding:8px; border-radius:5px; border:none;">
+                <button onclick="sendMsg()" style="background:var(--gold); border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">שלח</button>
+            </div>
         </div>
     </div>
 
-    <div id="main-area">
-        <div id="board">
-            <div id="deck" class="card" style="background: #444; color: white;">TAKI</div>
-            <div id="pile" style="margin-right: 50px;">
-                <div class="card" style="border-color: #e74c3c; color: #e74c3c;">8</div>
-            </div>
+    <div id="main-board">
+        <div id="status-bar" style="padding: 20px; text-align: center; font-size: 20px; color: var(--gold);">
+            מחכה לשחקנים נוספים...
         </div>
-        <div id="my-hand">
-            <div class="card" style="color: #3498db;">3</div>
-            <div class="card" style="color: #2ecc71;">+2</div>
-            <div class="card" style="color: #f1c40f;">Taki</div>
-            <div class="card" style="background: #000; color: #fff;">מלך</div>
+
+        <div id="center-pile">
+            <div id="deck" class="card special" onclick="drawCard()">קופה</div>
+            <div id="discard-pile">
+                </div>
         </div>
+
+        <div id="my-hand"></div>
     </div>
 </div>
 
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, onValue, push, update, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDTcYiOhazu3kfn5YhjAnjDBCJMyGaqvA4",
+        authDomain: "takimaster-39f6c.firebaseapp.com",
+        databaseURL: "https://takimaster-39f6c-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "takimaster-39f6c",
+        storageBucket: "takimaster-39f6c.firebasestorage.app",
+        messagingSenderId: "6879693086",
+        appId: "1:6879693086:web:298b7f22fe662a2148210f"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let myId, myName, currentTargetId = null;
+
+    window.joinGame = () => {
+        myName = document.getElementById('username').value;
+        if(!myName) return alert("שם בבקשה!");
+        
+        const pRef = push(ref(db, 'players'));
+        myId = pRef.key;
+        
+        onDisconnect(pRef).remove();
+        
+        set(pRef, { id: myId, name: myName, online: true });
+        
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('game-container').style.display = 'flex';
+        
+        initSync();
+    };
+
+    function initSync() {
+        // סנכרון שחקנים וצאט
+        onValue(ref(db, 'players'), (snap) => {
+            const players = snap.val();
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            for(let id in players) {
+                const p = players[id];
+                const div = document.createElement('div');
+                div.className = 'player-tag';
+                div.innerText = p.name + (id === myId ? " (אתה)" : "");
+                div.onclick = () => {
+                    currentTargetId = id;
+                    alert("עכשיו שולח הודעה פרטית ל-" + p.name);
+                };
+                list.appendChild(div);
+            }
+        });
+
+        onValue(ref(db, 'chat'), (snap) => {
+            const msgs = snap.val();
+            const box = document.getElementById('chat-msgs');
+            box.innerHTML = '';
+            for(let id in msgs) {
+                const m = msgs[id];
+                if(!m.target || m.target === myId || m.senderId === myId) {
+                    const div = document.createElement('div');
+                    div.className = 'msg' + (m.target ? ' private' : '');
+                    div.innerHTML = `<b>${m.sender}:</b> ${m.text}`;
+                    box.appendChild(div);
+                }
+            }
+            box.scrollTop = box.scrollHeight;
+        });
+    }
+
+    window.sendMsg = () => {
+        const input = document.getElementById('chat-input');
+        if(!input.value) return;
+        push(ref(db, 'chat'), {
+            sender: myName,
+            senderId: myId,
+            text: input.value,
+            target: currentTargetId,
+            time: Date.now()
+        });
+        input.value = '';
+        currentTargetId = null; // איפוס לצאט כללי
+    };
+
+    // פונקציות משחק נוספות יתווספו כאן בסנכרון הבא
+</script>
 </body>
 </html>
